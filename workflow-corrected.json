@@ -404,11 +404,6 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  \"title\": $json.Title,\n  \"address\": $json.Address,\n  \"website\": $json.Website,\n  \"description\": $json.description,\n  \"images\": $json.images,\n  \"city\": $json.City,\n  \"state\": $json.State,\n  \"price_range\": $json.Price_Range,\n  \"ratings\": $json.Ratings,\n  \"reviews\": $json.Reviews\n}) }}",
         "options": {
-          "batching": {
-            "batch": {
-              "batchSize": 5
-            }
-          },
           "timeout": 30000
         }
       },
