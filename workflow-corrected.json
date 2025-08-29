@@ -1,0 +1,812 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      },
+      "id": "a59b6ffb-e24f-4686-afe8-c476b77774a4",
+      "name": "Schedule Daily 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2304,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4",
+          "mode": "list",
+          "cachedResultName": "restaurant_US",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2007743330,
+          "mode": "list",
+          "cachedResultName": "Alexandre Errasti",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4/edit#gid=2007743330"
+        },
+        "options": {}
+      },
+      "id": "41a91afc-9535-44db-b8c0-e03576fc84c3",
+      "name": "Read Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        -2112,
+        272
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RTdk2CC4XVeQOgqd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Price_Range }}",
+              "value2": "$100+"
+            }
+          ]
+        }
+      },
+      "id": "e7785836-d5ff-48ca-98cd-4168c54b1300",
+      "name": "Filter 100+ Restaurants",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1904,
+        272
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "limit",
+        "maxItems": 2
+      },
+      "id": "41387f1c-1e5e-45ab-a46e-2c5b8152a9fc",
+      "name": "Limit to 2 Items (TEST)",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 3,
+      "position": [
+        -1712,
+        224
+      ],
+      "notes": "⚠️ Changé à 2 pour les tests. Remettre à 50 en production"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.Website }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      },
+      "id": "1593c9de-30e6-4433-b1dd-a2e29f95df47",
+      "name": "Has Website?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1504,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.Website }}",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "d370d5b0-31f3-4aeb-92e9-05a57e52ef90",
+      "name": "Scrape Website HTML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1296,
+        144
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "pageText",
+              "cssSelector": "body"
+            },
+            {
+              "key": "metaDescription",
+              "cssSelector": "meta[name='description']",
+              "returnValue": "attribute",
+              "attribute": "content"
+            },
+            {
+              "key": "images",
+              "cssSelector": "img",
+              "returnValue": "attribute",
+              "attribute": "src"
+            },
+            {
+              "key": "menuText",
+              "cssSelector": ".menu, #menu, [class*='menu']"
+            },
+            {
+              "key": "aboutText",
+              "cssSelector": ".about, #about, [class*='about'], [class*='story']"
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true
+        }
+      },
+      "id": "569d4425-d0ba-4b8c-9c25-5cf8a65db5e3",
+      "name": "Extract HTML Content",
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -1104,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "cleanedText",
+              "value": "={{ ($json.pageText || '') + ' ' + ($json.aboutText || '') + ' ' + ($json.menuText || '') }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "metaDescription",
+              "value": "={{ $json.metaDescription || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "images",
+              "value": "={{ $json.images || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "116113eb-29f8-42e2-b377-89c627ff841a",
+      "name": "Prepare for AI",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -928,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "Title",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "Address",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Address }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "Website",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Website }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "description",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "images",
+              "value": "={{ $('Prepare for AI').item.json.images }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "City",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.City }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "State",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.State }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "Price_Range",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Price_Range }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "Ratings",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Ratings }}",
+              "type": "number"
+            },
+            {
+              "id": "10",
+              "name": "Reviews",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Reviews }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a9aaee6c-38c6-4788-821c-226a87261115",
+      "name": "Merge All Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -464,
+        160
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "Title",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Title }}",
+              "type": "string"
+            },
+            {
+              "id": "2",
+              "name": "Address",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Address }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "Website",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Website }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "description",
+              "value": "Restaurant haut de gamme offrant une expérience culinaire exceptionnelle dans un cadre élégant. Une destination gastronomique incontournable pour les amateurs de fine cuisine. Réservation fortement recommandée.",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "images",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "City",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.City }}",
+              "type": "string"
+            },
+            {
+              "id": "7",
+              "name": "State",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.State }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "Price_Range",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Price_Range }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "Ratings",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Ratings }}",
+              "type": "number"
+            },
+            {
+              "id": "10",
+              "name": "Reviews",
+              "value": "={{ $('Limit to 2 Items (TEST)').item.json.Reviews }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "816071f5-3083-49b6-afe0-98683ff0f914",
+      "name": "No Website Fallback",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -768,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "id": "c2aca0f6-b8d7-4522-ae1a-b1c10332af79",
+      "name": "Merge Branches",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        -240,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://cc2d11a87522.ngrok-free.app/restaurants",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Batch-Date",
+              "value": "={{ $now.format('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "X-Total-Items",
+              "value": "={{ $items().length }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  \"title\": $json.Title,\n  \"address\": $json.Address,\n  \"website\": $json.Website,\n  \"description\": $json.description,\n  \"images\": $json.images,\n  \"city\": $json.City,\n  \"state\": $json.State,\n  \"price_range\": $json.Price_Range,\n  \"ratings\": $json.Ratings,\n  \"reviews\": $json.Reviews\n}) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 5
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "45112a7c-9539-4606-8049-c34cd9b47a4e",
+      "name": "Send HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        224
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.statusCode }}",
+              "operation": "equal",
+              "value2": 200
+            }
+          ]
+        }
+      },
+      "id": "78db4edf-6e97-42de-b4be-b1e67f1035fc",
+      "name": "Check Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        112,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4",
+          "mode": "list",
+          "cachedResultName": "restaurant_US",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1514582203,
+          "mode": "list",
+          "cachedResultName": "Batch log",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4/edit#gid=1514582203"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "restaurant": "={{ $('Merge Branches').item.json.Title }}",
+            "status": "SUCCESS",
+            "response": "={{ $json.statusCode }}",
+            "description": "={{ ($('Merge Branches').item.json.description || '').substring(0, 100) }}...",
+            "has_images": "={{ $('Merge Branches').item.json.images ? 'Yes' : 'No' }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "d54b7225-9947-4fae-afca-1f74ff548598",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        304,
+        176
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RTdk2CC4XVeQOgqd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4",
+          "mode": "list",
+          "cachedResultName": "restaurant_US",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1793121359,
+          "mode": "list",
+          "cachedResultName": "Batch Errors",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1YX9-m_NJ9P0V03xe3WRsSz-ugLCQ6JUMh9Oi-JUvOi4/edit#gid=1793121359"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $now.format('yyyy-MM-dd HH:mm:ss') }}",
+            "restaurant": "={{ $('Merge Branches').item.json.Title }}",
+            "status": "ERROR",
+            "error": "={{ $json.error?.message || $json.message || 'Unknown error' }}",
+            "step_failed": "={{ $('Merge Branches').item.json.Website ? 'HTTP Send' : 'Scraping/Processing' }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "82d7dda1-5b09-41a9-ae79-7551849d7bef",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [
+        304,
+        336
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "RTdk2CC4XVeQOgqd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# 🍽️ Workflow Enrichi avec Scraping & IA\n\n## ✅ CORRECTIONS APPLIQUÉES\n\n### 1. Nœuds Set configurés:\n- **Prepare for AI** : Nettoie et combine le texte scrapé\n- **Merge All Data** : Fusionne toutes les données avec description IA\n- **No Website Fallback** : Génère description par défaut\n\n### 2. Mapping corrigé:\n- **Send HTTP Request** : Utilise les bons noms de champs (Title, Address, etc.)\n- **Logs améliorés** : Référence correcte aux données\n\n### 3. Gestion d'erreurs:\n- **onError** : Remplace continueOnFail deprecated\n- **Expressions** : Syntaxe moderne ($json.field)\n\n### 4. URL API:\n- **ngrok** : https://cc2d11a87522.ngrok-free.app/restaurants\n- **Test** : Limite à 2 items\n\n## 🎯 PRÊT POUR LES TESTS\n\nLe workflow est maintenant fonctionnel :\n- ✅ Connexion API via ngrok\n- ✅ Mapping des champs corrigé\n- ✅ Nœuds Set configurés\n- ✅ Gestion d'erreurs moderne\n- ✅ Logs détaillés",
+        "height": 650,
+        "width": 450
+      },
+      "id": "c6cadbd7-9185-4afb-8fea-34492a686bbc",
+      "name": "Documentation Corrigée",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2816,
+        0
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "30b906f1-7577-4782-b05a-a4804e1e0077",
+      "name": "NoOp",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        512,
+        224
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Crée une description marketing pour ce restaurant:\n\nNom: {{ $('Limit to 2 Items (TEST)').item.json.Title }}\nAdresse: {{ $('Limit to 2 Items (TEST)').item.json.Address }}\nVille: {{ $('Limit to 2 Items (TEST)').item.json.City }}\nGamme de prix: {{ $('Limit to 2 Items (TEST)').item.json.Price_Range }}\nNote: {{ $('Limit to 2 Items (TEST)').item.json.Ratings }} étoiles avec {{ $('Limit to 2 Items (TEST)').item.json.Reviews }} avis\n\nTexte du site web:\n{{ $('Prepare for AI').item.json.cleanedText }}\n\nGénère une description de 3-4 phrases qui donne envie de réserver.",
+        "options": {
+          "systemMessage": "Tu es un expert en marketing gastronomique. Crée des descriptions de restaurants haut de gamme qui donnent envie, en français, sur le modèle suivant:\n\n\"Niché en plein cœur de [lieu], [Nom du restaurant] vous invite à [expérience culinaire unique]. [Description de la cuisine/spécialité]. [Ambiance/décor remarquable]. [Point fort unique qui donne envie de réserver].\"\n\nRègles:\n- 3-4 phrases maximum\n- Mettre en avant l'expérience premium\n- Utiliser un vocabulaire élégant et évocateur\n- Mentionner la localisation si pertinente\n- Créer le désir et l'urgence de réserver\n- Si le texte source est en anglais, traduire en français"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -752,
+        128
+      ],
+      "id": "07af9333-f6c7-4978-9622-59b4a3320c5f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "claude-3-5-haiku-20241022",
+          "mode": "list",
+          "cachedResultName": "Claude Haiku 3.5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -736,
+        304
+      ],
+      "id": "e4497563-1c4e-46ce-9218-50ebf4f99efb",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "x78s36uY5N0BggyR",
+          "name": "Anthropic account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Daily 9AM": {
+      "main": [
+        [
+          {
+            "node": "Read Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Google Sheet": {
+      "main": [
+        [
+          {
+            "node": "Filter 100+ Restaurants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter 100+ Restaurants": {
+      "main": [
+        [
+          {
+            "node": "Limit to 2 Items (TEST)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit to 2 Items (TEST)": {
+      "main": [
+        [
+          {
+            "node": "Has Website?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Website?": {
+      "main": [
+        [
+          {
+            "node": "Scrape Website HTML",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Website Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Website HTML": {
+      "main": [
+        [
+          {
+            "node": "Extract HTML Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract HTML Content": {
+      "main": [
+        [
+          {
+            "node": "Prepare for AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for AI": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Data": {
+      "main": [
+        [
+          {
+            "node": "Merge Branches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Website Fallback": {
+      "main": [
+        [
+          {
+            "node": "Merge Branches",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Branches": {
+      "main": [
+        [
+          {
+            "node": "Send HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Check Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Response": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Success": {
+      "main": [
+        [
+          {
+            "node": "NoOp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Error": {
+      "main": [
+        [
+          {
+            "node": "NoOp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge All Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "affee3ba0c3444abe5ebd6fd0c8dda58f2afe224cea71a171c9061c1bbf58abf"
+  }
+}
