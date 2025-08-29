@@ -152,14 +152,15 @@
         }
 
         .restaurant-image {
-            width: 80px;
-            height: 60px;
+            width: 100px;
+            height: 75px;
             object-fit: cover;
             border-radius: 8px;
             border: 2px solid #eee;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, border-color 0.3s ease;
             cursor: pointer;
             flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         .restaurant-image:hover {
@@ -397,6 +398,20 @@
             
             // Vérifier le protocole
             if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) return false;
+            
+            const lowerUrl = url.toLowerCase();
+            
+            // Exclure les logos, icônes, favicon
+            if (lowerUrl.includes('logo') || lowerUrl.includes('icon') || lowerUrl.includes('favicon') || 
+                lowerUrl.includes('sprite') || lowerUrl.includes('symbol') || lowerUrl.includes('badge')) {
+                return false;
+            }
+            
+            // Exclure les très petites images
+            if (lowerUrl.includes('16x16') || lowerUrl.includes('32x32') || lowerUrl.includes('64x64') || 
+                lowerUrl.includes('small') || lowerUrl.includes('thumb')) {
+                return false;
+            }
             
             // Vérifier les extensions d'image communes
             const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i;
