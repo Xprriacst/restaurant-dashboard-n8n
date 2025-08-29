@@ -366,8 +366,7 @@
     },
     {
       "parameters": {
-        "mode": "combine",
-        "combineBy": "combineByPosition",
+        "mode": "append",
         "options": {}
       },
       "id": "c2aca0f6-b8d7-4522-ae1a-b1c10332af79",
