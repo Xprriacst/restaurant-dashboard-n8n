@@ -143,6 +143,40 @@
             font-style: italic;
         }
 
+        .restaurant-images {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 5px 0;
+        }
+
+        .restaurant-image {
+            width: 80px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #eee;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .restaurant-image:hover {
+            transform: scale(1.1);
+            border-color: #667eea;
+        }
+
+        .no-images {
+            color: #999;
+            font-style: italic;
+            font-size: 0.9em;
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
         .restaurant-meta {
             display: flex;
             justify-content: space-between;
@@ -312,6 +346,8 @@
                         ${restaurant.description || 'Aucune description disponible'}
                     </div>
                     
+                    ${generateImageGallery(restaurant.images)}
+                    
                     <div class="restaurant-meta">
                         <span>Reçu: ${new Date(restaurant.received_at).toLocaleString('fr-FR')}</span>
                         ${websiteLink}
@@ -320,6 +356,72 @@
                 
                 container.appendChild(card);
             });
+        }
+
+        function generateImageGallery(images) {
+            if (!images || images === '') {
+                return '<div class="no-images">📷 Aucune image disponible</div>';
+            }
+            
+            // Traiter les images (peut être une string ou un array)
+            let imageUrls = [];
+            if (typeof images === 'string') {
+                // Si c'est une string, séparer par des virgules ou des espaces
+                imageUrls = images.split(/[,\s]+/).filter(url => url.trim() && isValidImageUrl(url.trim()));
+            } else if (Array.isArray(images)) {
+                imageUrls = images.filter(url => url && isValidImageUrl(url));
+            }
+            
+            if (imageUrls.length === 0) {
+                return '<div class="no-images">📷 Aucune image valide trouvée</div>';
+            }
+            
+            // Limiter à 5 images maximum pour l'affichage
+            const displayImages = imageUrls.slice(0, 5);
+            
+            const imageElements = displayImages.map(url => 
+                `<img src="${url}" alt="Restaurant" class="restaurant-image" onclick="openImageModal('${url}')" onerror="this.style.display='none'">`
+            ).join('');
+            
+            return `
+                <div class="restaurant-images">
+                    ${imageElements}
+                    ${imageUrls.length > 5 ? `<span style="color: #999; font-size: 0.8em; align-self: center;">+${imageUrls.length - 5} autres</span>` : ''}
+                </div>
+            `;
+        }
+        
+        function isValidImageUrl(url) {
+            // Vérifier si l'URL semble être une image
+            if (!url || typeof url !== 'string') return false;
+            
+            // Vérifier le protocole
+            if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('/')) return false;
+            
+            // Vérifier les extensions d'image communes
+            const imageExtensions = /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i;
+            return imageExtensions.test(url) || url.includes('image') || url.includes('photo');
+        }
+        
+        function openImageModal(imageUrl) {
+            // Créer une modal simple pour afficher l'image en grand
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background: rgba(0,0,0,0.8); z-index: 1000; display: flex; 
+                justify-content: center; align-items: center; cursor: pointer;
+            `;
+            
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.style.cssText = `
+                max-width: 90%; max-height: 90%; border-radius: 10px; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            `;
+            
+            modal.appendChild(img);
+            modal.onclick = () => document.body.removeChild(modal);
+            document.body.appendChild(modal);
         }
 
         function updateStats(restaurants) {
